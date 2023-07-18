@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Real-Time Chat</title>
+    <style>
+
+      #user-list{
+        list-style-type: none;
+        padding: 0;
+        max-height: 80px;
+        overflow-y: auto;
+      }
+      
+      #message-list {
+        list-style-type: none;
+        padding: 0;
+        max-height: 250px;
+        overflow-y: auto;
+      }
+      #chat-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        border: 1px solid #ccc;
+        padding: 20px;
+        max-width: 500px;
+        height: calc(100vh - 70px); /* Adjust the height to fill the entire viewport */
+        margin: auto;
+        position: relative; 
+      }
+      #chat-container h2 {
+        margin-top: 0;
+      }
+      #chat-form {
+        display: flex;
+        gap: 10px;
+        position: absolute; /* Add this line to position #chat-form */
+        bottom: 20px; /* Add this line to anchor #chat-form to the bottom of #chat-container */
+    
+      }
+      #chat-form input {
+        flex: 1;
+        padding: 5px;
+      }
+      #chat-form button {
+        padding: 5px 10px;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.1/socket.io.js"></script>
+  </head>
+  <body>
+    <div id="registration-container">
+      <h2>Register User</h2>
+      <form id="user-registration">
+        <input id="username-input" autocomplete="off" placeholder="Enter username" />
+        <button>Register</button>
+      </form>
+    </div>
+
+    <div id="chat-container" style="display: none;">
+      <div>
+        <h2>Connected Online Users</h2>
+        <ul id="user-list"></ul>
+
+        <h2>Chat</h2>
+        <ul id="message-list"></ul>
+      </div>
+      
+      <form id="chat-form">
+        <input id="recipient-input" autocomplete="off" placeholder="Recipient username" />
+        <input id="message-input" autocomplete="off" placeholder="Message" />
+        <button>Send</button>
+      </form>
+    </div>
+
+    <script>
+      const socket = io();
+      let currentUser = null;
+
+      const registrationContainer = document.getElementById('registration-container');
+      const userRegistrationForm = document.getElementById('user-registration');
+      const usernameInput = document.getElementById('username-input');
+
+      const chatContainer = document.getElementById('chat-container');
+      const chatForm = document.getElementById('chat-form');
+      const recipientInput = document.getElementById('recipient-input');
+      const messageInput = document.getElementById('message-input');
+      const messageList = document.getElementById('message-list');
+      const userList = document.getElementById('user-list');
+
+      userRegistrationForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        currentUser = usernameInput.value;
+        socket.emit('register user', currentUser);
+        registrationContainer.style.display = 'none';
+        chatContainer.style.display = 'block';
+      });
+
+      chatForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const recipient = recipientInput.value;
+        const message = messageInput.value;
+        socket.emit('chat message', { recipient, message });
+        messageInput.value = '';
+      });
+
+      socket.on('user ids', (userIDs) => {
+        userList.innerHTML = '';
+        userIDs.forEach((userID) => {
+          const li = document.createElement('li');
+          li.textContent = userID;
+          userList.appendChild(li);
+        });
+      });
+
+      socket.on('chat message', ({ sender, recipient, message, timestamp }) => {
+        const li = document.createElement('li');
+        li.textContent = `[${timestamp}] ${sender} to ${recipient}: ${message}`;
+        messageList.appendChild(li);
+      });
+    </script>
+  </body>
+</html>
